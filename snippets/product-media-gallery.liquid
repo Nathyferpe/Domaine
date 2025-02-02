@@ -270,6 +270,10 @@
               class="thumbnail-list__item slider__slide{% if section.settings.hide_variants and variant_images contains media.src %} thumbnail-list_item--variant{% endif %}"
               data-target="{{ section.id }}-{{ media.id }}"
               data-media-position="{{ media_index }}"
+              {% if product.selected_or_first_available_variant.featured_image.alt != media.alt and product.selected_or_first_available_variant.featured_image.alt != blank %}
+                style="display:none"
+              {% endif %}
+              thumbnail-img-alt= {{ media.alt }}
             >
               {%- if media.media_type == 'model' -%}
                 <span class="thumbnail__badge" aria-hidden="true">
