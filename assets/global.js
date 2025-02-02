@@ -1075,33 +1075,49 @@ class VariantSelects extends HTMLElement {
   updateSelectionMetadata({ target }) {
     const { value, tagName } = target;
 
+    // Ensure Variants Are Selectable
     if (tagName === 'SELECT' && target.selectedOptions.length) {
       Array.from(target.options)
         .find((option) => option.getAttribute('selected'))
-        .removeAttribute('selected');
-      target.selectedOptions[0].setAttribute('selected', 'selected');
-
-      const swatchValue = target.selectedOptions[0].dataset.optionSwatchValue;
-      const selectedDropdownSwatchValue = target
-        .closest('.product-form__input')
-        .querySelector('[data-selected-value] > .swatch');
-      if (!selectedDropdownSwatchValue) return;
-      if (swatchValue) {
-        selectedDropdownSwatchValue.style.setProperty('--swatch--background', swatchValue);
-        selectedDropdownSwatchValue.classList.remove('swatch--unavailable');
-      } else {
-        selectedDropdownSwatchValue.style.setProperty('--swatch--background', 'unset');
-        selectedDropdownSwatchValue.classList.add('swatch--unavailable');
-      }
-
-      selectedDropdownSwatchValue.style.setProperty(
-        '--swatch-focal-point',
-        target.selectedOptions[0].dataset.optionSwatchFocalPoint || 'unset'
-      );
-    } else if (tagName === 'INPUT' && target.type === 'radio') {
-      const selectedSwatchValue = target.closest(`.product-form__input`).querySelector('[data-selected-value]');
+        ?.removeAttribute("selected");
+      target.selectedOptions[0].setAttribute("selected", "selected");
+    } else if (tagName === "INPUT" && target.type === "radio") {
+      const selectedSwatchValue = target
+        .closest(`.product-form__input`)
+        .querySelector("[data-selected-value]");
       if (selectedSwatchValue) selectedSwatchValue.innerHTML = value;
     }
+    // Get Selected Color from Swatch Label, Dropdown, or Radio Button
+    let selectedColor = "";
+  
+    if (tagName === "SELECT" && target.selectedOptions.length) {
+      selectedColor = target.selectedOptions[0].textContent.trim();
+    } else if (tagName === "INPUT" && target.type === "radio") {
+      selectedColor = target.value.trim();
+    } else if (target.classList.contains("swatch-input__label")) {
+      selectedColor = target.getAttribute("title").trim();
+    }
+  
+    if (!selectedColor) {
+      console.warn("No color selected.");
+      return;
+    }
+  
+    selectedColor = selectedColor.toLowerCase(); // lowercase in JavaScript
+  
+    console.log("Selected Color:", selectedColor);
+  
+    // Hide all thumbnails first
+    document.querySelectorAll("[thumbnail-img-alt]").forEach((img) => {
+      img.style.display = "none";
+    });
+  
+    // Show only thumbnails that match the selected color
+    document.querySelectorAll(`[thumbnail-img-alt='${selectedColor}']`).forEach((img) => {
+      img.style.display = "block";
+    });
+  
+    console.log(`Showing images for color: ${selectedColor}`);
   }
 
   getInputForEventTarget(target) {
