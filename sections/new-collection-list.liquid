@@ -1,0 +1,184 @@
+<!-- Provisional Styles  -->
+{{ 'new-collection-list.css' | asset_url | stylesheet_tag }}
+
+
+<div class="custom-collection" id="productCollection" class="product-grid-container"></div>
+
+<script>
+  let storeBackgroundColors = {}; // Store background colors
+  let storeSecondaryImages = {}; // Store secondary images
+
+  // Retrieve metafields via Liquid
+  {% assign liquiProducts = section.settings.collection.products %}
+  {% for prod in liquiProducts %}
+    {% for variant in prod.variants %}
+      storeBackgroundColors[{{ variant.id }}] = "{{ variant.metafields.custom.variant_color.value }}";
+      
+      {% if variant.metafields.custom.secondary_image != blank %}
+        storeSecondaryImages[{{ variant.id }}] = "{{ variant.metafields.custom.secondary_image | file_url }}";
+      {% else %}
+        storeSecondaryImages[{{ variant.id }}] = "";
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+
+  // Debugging: Log stored secondary images to the console
+  console.log("Stored Secondary Images:", storeSecondaryImages);
+
+  const originalProducts = {{ section.settings.collection.products | json }}
+    .slice(0, {{ section.settings.product-limit }});
+
+  let allProds = originalProducts.map(prod => {
+    let temporaryStorage = {};
+    let arrayForColors = [];
+    let arrayForSizes = [];
+
+    prod.variants.forEach(vari => {
+      if (vari.option1 !== 'Default Title') {
+        if (!temporaryStorage[vari.option1]) {
+          temporaryStorage[vari.option1] = { ...vari };
+          arrayForColors.push(vari);
+        }
+        if (!temporaryStorage[vari.option2]) {
+          temporaryStorage[vari.option2] = { ...vari };
+          arrayForSizes.push(vari.option2);
+        }
+      }
+    });
+
+    return { ...prod, variants: arrayForColors, sizes: arrayForSizes };
+  });
+
+  const products = allProds;
+
+  function createProductElement(product) {
+    const productElement = document.createElement('div');
+    productElement.className = 'product';
+
+    // Get first variant
+    const firstVariant = product.variants.length > 1 ? product.variants[0] : null;
+    const primaryImageSrc = firstVariant ? firstVariant.featured_image.src : product.images[0];
+    const secondaryImageSrc = firstVariant && storeSecondaryImages[firstVariant.id] !== "" 
+      ? storeSecondaryImages[firstVariant.id] 
+      : '';
+
+    console.log(`Checking Variant ID: ${firstVariant.id}, Secondary Image: ${secondaryImageSrc}`);
+
+    productElement.innerHTML = `
+      <div class="product-image-container">
+        ${product.compare_at_price && product.compare_at_price > product.price ? `
+          <div class="badge-special-card">
+            <span class="badge color-sale">On Sale!</span>
+          </div>
+        ` : ''}
+        
+        <img 
+          src="${primaryImageSrc}" 
+          alt="${product.title}" 
+          class="product-image primary-image"
+          data-default="${primaryImageSrc}"
+        >
+        <img 
+          src="${secondaryImageSrc}" 
+          alt="${product.title} secondary" 
+          class="product-image secondary-image"
+          ${secondaryImageSrc ? '' : 'style="display: none;"'}
+        >
+      </div>
+      
+      <div class="product-info" data-product-handle="${product.handle}">
+        <div class="color-options ${product.variants.length <= 1 ? 'hide' : ''}">
+          ${product.variants.length && product.variants.map((variant, index) => `
+            <div class="${variant.option1 === 'Default Title' ? 'hide' : 'color-option'} ${index === 0 ? 'active' : ''}" 
+              style="background-color: ${storeBackgroundColors[variant.id]};" 
+              data-color-index="${index}"
+              data-variant-id="${variant.id}">
+            </div>
+          `).join('')}
+        </div>
+
+        <p class="vendor-name">${product.vendor}</p>
+
+        <a class="product-link" href="/products/${product.handle}">
+          <h3 class="product-title">${product.title}</h3>
+        </a>
+
+        <div class="product-price-container">
+          ${product.compare_at_price && product.compare_at_price > product.price ? `
+            <span class="product-compare-price">$${(product.compare_at_price / 100).toFixed(2)}</span>
+            <span class="product-discount-price">$${(product.price / 100).toFixed(2)}</span>
+          ` : `
+            <span class="product-price">$${(product.price / 100).toFixed(2)}</span>
+          `}
+        </div>
+      </div>
+    `;
+
+    // Handle variant color selection
+    const colorOptions = productElement.querySelectorAll('.color-option');
+    const productImage = productElement.querySelector('.primary-image');
+    const secondaryImage = productElement.querySelector('.secondary-image');
+
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const colorIndex = option.getAttribute('data-color-index');
+        const selectedVariant = product.variants[colorIndex];
+
+        // Update primary image
+        productImage.src = selectedVariant.featured_image.src;
+        productImage.setAttribute('data-default', selectedVariant.featured_image.src);
+
+        // Update secondary image if the variant has a secondary image
+        if (storeSecondaryImages[selectedVariant.id] && storeSecondaryImages[selectedVariant.id] !== "") {
+          secondaryImage.src = storeSecondaryImages[selectedVariant.id];
+          secondaryImage.style.display = "block";
+        } else {
+          secondaryImage.style.display = "none";
+        }
+
+        colorOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+      });
+    });
+
+    return productElement;
+  }
+
+  function renderProducts() {
+    const collectionElement = document.getElementById('productCollection');
+    products.forEach(product => {
+      const productElement = createProductElement(product);
+      collectionElement.appendChild(productElement);
+    });
+  }
+
+  renderProducts();
+</script>
+
+{% schema %}
+{
+  "name": "New Collection List",
+  "class": "section",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:sections.featured-collection.settings.collection.label"
+    },
+    {
+      "type": "number",
+      "id": "product-limit",
+      "label": "# of products to show",
+      "default": 3
+    }
+  ],
+  "presets": [
+    {
+      "name": "New Collection List",
+      "settings": {},
+      "blocks": []
+    }
+  ]
+}
+{% endschema %}
