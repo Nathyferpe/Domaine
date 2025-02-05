@@ -1,184 +1,195 @@
-<!-- Provisional Styles  -->
+<!-- Color option selector classes  -->
 {{ 'new-collection-list.css' | asset_url | stylesheet_tag }}
-
-
-<div class="custom-collection" id="productCollection" class="product-grid-container"></div>
-
+<div class="custom-collection my-[40px]" id="productCollection"></div>
+<div class="flex justify-center gap-[30px] my-[40px]" id="productCollection"></div>
 <script>
-  let storeBackgroundColors = {}; // Store background colors
-  let storeSecondaryImages = {}; // Store secondary images
-
-  // Retrieve metafields via Liquid
-  {% assign liquiProducts = section.settings.collection.products %}
-  {% for prod in liquiProducts %}
-    {% for variant in prod.variants %}
-      storeBackgroundColors[{{ variant.id }}] = "{{ variant.metafields.custom.variant_color.value }}";
-      
-      {% if variant.metafields.custom.secondary_image != blank %}
-        storeSecondaryImages[{{ variant.id }}] = "{{ variant.metafields.custom.secondary_image | file_url }}";
-      {% else %}
-        storeSecondaryImages[{{ variant.id }}] = "";
-      {% endif %}
-    {% endfor %}
-  {% endfor %}
-
-  // Debugging: Log stored secondary images to the console
-  console.log("Stored Secondary Images:", storeSecondaryImages);
-
-  const originalProducts = {{ section.settings.collection.products | json }}
-    .slice(0, {{ section.settings.product-limit }});
-
-  let allProds = originalProducts.map(prod => {
-    let temporaryStorage = {};
-    let arrayForColors = [];
-    let arrayForSizes = [];
-
-    prod.variants.forEach(vari => {
-      if (vari.option1 !== 'Default Title') {
-        if (!temporaryStorage[vari.option1]) {
-          temporaryStorage[vari.option1] = { ...vari };
-          arrayForColors.push(vari);
-        }
-        if (!temporaryStorage[vari.option2]) {
-          temporaryStorage[vari.option2] = { ...vari };
-          arrayForSizes.push(vari.option2);
-        }
-      }
-    });
-
-    return { ...prod, variants: arrayForColors, sizes: arrayForSizes };
-  });
-
-  const products = allProds;
-
-  function createProductElement(product) {
-    const productElement = document.createElement('div');
-    productElement.className = 'product';
-
-    // Get first variant
-    const firstVariant = product.variants.length > 1 ? product.variants[0] : null;
-    const primaryImageSrc = firstVariant ? firstVariant.featured_image.src : product.images[0];
-    const secondaryImageSrc = firstVariant && storeSecondaryImages[firstVariant.id] !== "" 
-      ? storeSecondaryImages[firstVariant.id] 
-      : '';
-
-    console.log(`Checking Variant ID: ${firstVariant.id}, Secondary Image: ${secondaryImageSrc}`);
-
-    productElement.innerHTML = `
-      <div class="product-image-container">
-        ${product.compare_at_price && product.compare_at_price > product.price ? `
-          <div class="badge-special-card">
-            <span class="badge color-sale">On Sale!</span>
-          </div>
-        ` : ''}
-        
-        <img 
-          src="${primaryImageSrc}" 
-          alt="${product.title}" 
-          class="product-image primary-image"
-          data-default="${primaryImageSrc}"
-        >
-        <img 
-          src="${secondaryImageSrc}" 
-          alt="${product.title} secondary" 
-          class="product-image secondary-image"
-          ${secondaryImageSrc ? '' : 'style="display: none;"'}
-        >
-      </div>
-      
-      <div class="product-info" data-product-handle="${product.handle}">
-        <div class="color-options ${product.variants.length <= 1 ? 'hide' : ''}">
-          ${product.variants.length && product.variants.map((variant, index) => `
-            <div class="${variant.option1 === 'Default Title' ? 'hide' : 'color-option'} ${index === 0 ? 'active' : ''}" 
-              style="background-color: ${storeBackgroundColors[variant.id]};" 
-              data-color-index="${index}"
-              data-variant-id="${variant.id}">
-            </div>
-          `).join('')}
-        </div>
-
-        <p class="vendor-name">${product.vendor}</p>
-
-        <a class="product-link" href="/products/${product.handle}">
-          <h3 class="product-title">${product.title}</h3>
-        </a>
-
-        <div class="product-price-container">
-          ${product.compare_at_price && product.compare_at_price > product.price ? `
-            <span class="product-compare-price">$${(product.compare_at_price / 100).toFixed(2)}</span>
-            <span class="product-discount-price">$${(product.price / 100).toFixed(2)}</span>
-          ` : `
-            <span class="product-price">$${(product.price / 100).toFixed(2)}</span>
-          `}
-        </div>
-      </div>
-    `;
-
-    // Handle variant color selection
-    const colorOptions = productElement.querySelectorAll('.color-option');
-    const productImage = productElement.querySelector('.primary-image');
-    const secondaryImage = productElement.querySelector('.secondary-image');
-
-    colorOptions.forEach(option => {
-      option.addEventListener('click', () => {
-        const colorIndex = option.getAttribute('data-color-index');
-        const selectedVariant = product.variants[colorIndex];
-
-        // Update primary image
-        productImage.src = selectedVariant.featured_image.src;
-        productImage.setAttribute('data-default', selectedVariant.featured_image.src);
-
-        // Update secondary image if the variant has a secondary image
-        if (storeSecondaryImages[selectedVariant.id] && storeSecondaryImages[selectedVariant.id] !== "") {
-          secondaryImage.src = storeSecondaryImages[selectedVariant.id];
-          secondaryImage.style.display = "block";
-        } else {
-          secondaryImage.style.display = "none";
-        }
-
-        colorOptions.forEach(opt => opt.classList.remove('active'));
-        option.classList.add('active');
-      });
-    });
-
-    return productElement;
-  }
-
-  function renderProducts() {
-    const collectionElement = document.getElementById('productCollection');
-    products.forEach(product => {
-      const productElement = createProductElement(product);
-      collectionElement.appendChild(productElement);
-    });
-  }
-
-  renderProducts();
+   let storeBackgroundColors = {}; // Store background colors
+   let storeSecondaryImages = {}; // Store secondary images
+   
+   // Retrieve metafields via Liquid
+   {% assign liquiProducts = section.settings.collection.products %}
+   {% for prod in liquiProducts %}
+     {% for variant in prod.variants %}
+       storeBackgroundColors[{{ variant.id }}] = "{{ variant.metafields.custom.variant_color.value }}";
+       
+       {% if variant.metafields.custom.secondary_image != blank %}
+         storeSecondaryImages[{{ variant.id }}] = "{{ variant.metafields.custom.secondary_image | file_url }}";
+       {% else %}
+         storeSecondaryImages[{{ variant.id }}] = "";
+       {% endif %}
+     {% endfor %}
+   {% endfor %}
+   
+   // Debugging: Log stored secondary images to the console
+   console.log("Stored Secondary Images:", storeSecondaryImages);
+   
+   const originalProducts = {{ section.settings.collection.products | json }}
+     .slice(0, {{ section.settings.product-limit }});
+   
+   let allProds = originalProducts.map(prod => {
+     let temporaryStorage = {};
+     let arrayForColors = [];
+     let arrayForSizes = [];
+   
+     prod.variants.forEach(vari => {
+       if (vari.option1 !== 'Default Title') {
+         if (!temporaryStorage[vari.option1]) {
+           temporaryStorage[vari.option1] = { ...vari };
+           arrayForColors.push(vari);
+         }
+         if (!temporaryStorage[vari.option2]) {
+           temporaryStorage[vari.option2] = { ...vari };
+           arrayForSizes.push(vari.option2);
+         }
+       }
+     });
+   
+     return { ...prod, variants: arrayForColors, sizes: arrayForSizes };
+   });
+   
+   const products = allProds;
+   
+   function createProductElement(product) {
+     const productElement = document.createElement('div');
+     productElement.className = 'product';
+   
+     // Get first variant
+     const firstVariant = product.variants.length > 1 ? product.variants[0] : null;
+     const primaryImageSrc = firstVariant ? firstVariant.featured_image.src : product.images[0];
+     const secondaryImageSrc = firstVariant && storeSecondaryImages[firstVariant.id] !== "" 
+       ? storeSecondaryImages[firstVariant.id] 
+       : '';
+   
+     console.log(`Checking Variant ID: ${firstVariant.id}, Secondary Image: ${secondaryImageSrc}`);
+   
+     productElement.innerHTML = `
+     <div class="product-image-container flex flex-col justify-between w-[315px] h-[452px]" style="margin-top: 22px; margin-left: 27px;">
+       <div class="rounded-[10px] relative overflow-hidden border border-[#e8e8e8]">
+         ${product.compare_at_price && product.compare_at_price > product.price ? `
+           <div class="badge-special-card absolute top-[20px] left-[20px] z-[4]">
+             <span style="border-radius: 25.61px; font-size: 15.37px; border: solid #ff0000 1px; border-color: #FF0000; color:#ff0000; padding: 4.22px 12.8px; background: transparent; font-family: 'Libre Franklin', sans-serif; font-weight: 500; line-height:17.93px;">
+   On Sale!
+   </span>
+           </div>
+         ` : ''}
+         
+   
+         <div class="product-card-container group flex flex-col w-[315px] h-[340px] border border-transparent rounded-[10px] overflow-hidden">
+   
+         <div class="flex-container-images" style="display:flex; justify-content:center; items-center; width:100%; height:auto; padding-top:19.45px;">
+         <img style="width:271px; height:301px;"
+           src="${primaryImageSrc}" 
+           alt="${product.title}" 
+           class="relative top-0 left-0 w-full object-cover opacity-100 z-[2] transition-opacity duration-300 ease-in-out group-hover:opacity-0 primary-image"
+           data-default="${primaryImageSrc}"
+         >
+         <img style="width:271px;"
+           src="${secondaryImageSrc}" 
+           alt="${product.title} secondary" 
+           class="absolute top-[100%] left-0 w-full h-full object-cover opacity-0 z-[1] transition-opacity duration-300 ease-in-out group-hover:opacity-100 secondary-image"
+           ${secondaryImageSrc ? '' : 'style="display: none;"'}
+         >
+         </div>
+         </div>
+       </div>
+       
+       <div class="product-info w-full h-[97px] relative cursor-pointer" data-product-handle="${product.handle}">
+         <div class="color-options flex gap-[8px] ${product.variants.length <= 1 ? 'hide' : ''}">
+           ${product.variants.length && product.variants.map((variant, index) => `
+             <div class="${variant.option1 === 'Default Title' ? 'hide' : 'color-option'} ${index === 0 ? 'active' : ''}" 
+               style="background-color: ${storeBackgroundColors[variant.id]};" 
+               data-color-index="${index}"
+               data-variant-id="${variant.id}">
+             </div>
+           `).join('')}
+         </div>
+   
+         <div class="vendor-name data-container grid flex-col gap-[4px]" style="margin-top:11px;">
+           <div class="m-0 text-\[14px\] leading-\[16px\] font-normal text-[#111] column-gap: 8px; font-['Roboto']">${product.vendor}</div>
+   
+           <a class="product-link no-underline cursor-pointer text-[16px] leading-[18px] text-[#0A4874] hover:underline" href="/products/${product.handle}" style="margin: 0px !important; padding: 0px !important;">
+             <h3 class="m-0 text-[16px] font-medium text-[#0A4874] leading-[18px] font-['Roboto']" style="margin: 0px !important; padding: 0px !important; font-weight: 500 !important">
+               ${product.title}
+             </h3>
+           </a>
+   
+           <div class="product-price-container flex gap-[8px] font-['Roboto']">
+             ${product.compare_at_price && product.compare_at_price > product.price ? `
+               <span class=" text-[14px] font-normal text-[#111] leading-[16px] text-center line-through text-\[14px\]">$${(product.compare_at_price / 100).toFixed(2)}</span>
+               <span class="text-[14px] font-normal leading-[16px] text-center text-\[\#FF0000\]">$${(product.price / 100).toFixed(2)}</span>
+             ` : `
+               <span class="text-\[14px\] font-light text-[#111] mb-[15px] font-['Roboto']">$${(product.price / 100).toFixed(2)}</span>
+             `}
+           </div>
+         </div>
+       </div>
+      </div> 
+     `;
+   
+     // Handle variant color selection
+     const colorOptions = productElement.querySelectorAll('.color-option');
+     const productImage = productElement.querySelector('.primary-image');
+     const secondaryImage = productElement.querySelector('.secondary-image');
+   
+     colorOptions.forEach(option => {
+       option.addEventListener('click', () => {
+         const colorIndex = option.getAttribute('data-color-index');
+         const selectedVariant = product.variants[colorIndex];
+   
+         // Update primary image
+         productImage.src = selectedVariant.featured_image.src;
+         productImage.setAttribute('data-default', selectedVariant.featured_image.src);
+   
+         // Update secondary image if the variant has a secondary image
+         if (storeSecondaryImages[selectedVariant.id] && storeSecondaryImages[selectedVariant.id] !== "") {
+           secondaryImage.src = storeSecondaryImages[selectedVariant.id];
+           secondaryImage.style.display = "block";
+         } else {
+           secondaryImage.style.display = "none";
+         }
+   
+         colorOptions.forEach(opt => opt.classList.remove('active'));
+         option.classList.add('active');
+       });
+     });
+   
+     return productElement;
+   }
+   
+   function renderProducts() {
+     const collectionElement = document.getElementById('productCollection');
+     products.forEach(product => {
+       const productElement = createProductElement(product);
+       collectionElement.appendChild(productElement);
+     });
+   }
+   
+   renderProducts();
 </script>
-
 {% schema %}
 {
-  "name": "New Collection List",
-  "class": "section",
-  "tag": "section",
-  "settings": [
-    {
-      "type": "collection",
-      "id": "collection",
-      "label": "t:sections.featured-collection.settings.collection.label"
-    },
-    {
-      "type": "number",
-      "id": "product-limit",
-      "label": "# of products to show",
-      "default": 3
-    }
-  ],
-  "presets": [
-    {
-      "name": "New Collection List",
-      "settings": {},
-      "blocks": []
-    }
-  ]
+"name": "New Collection List",
+"class": "section",
+"tag": "section",
+"settings": [
+{
+"type": "collection",
+"id": "collection",
+"label": "t:sections.featured-collection.settings.collection.label"
+},
+{
+"type": "number",
+"id": "product-limit",
+"label": "# of products to show",
+"default": 3
+}
+],
+"presets": [
+{
+"name": "New Collection List",
+"settings": {},
+"blocks": []
+}
+]
 }
 {% endschema %}
